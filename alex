@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'stringio'
+
+require './src/parse/parser'
+require './src/compile/visitors/tree_visitor'
+
+options = {
+    level: :ast
+}
+
+OptionParser.new do |opts|
+  opts.banner = 'Usage: ruby alex.rb [options]'
+
+  opts.on_tail('-h', '--help', 'Show these messages') do
+    puts opts
+    exit
+  end
+
+  opts.on('-i', '--interactive', 'Run as interactive interpreter') do
+    options[:mode] = :interactive
+  end
+
+  opts.on('-f', '--file FILENAME', 'Run with code file') do |filename|
+    options[:mode] = :file
+    options[:filename] = filename
+  end
+
+  opts.on('-l', '--level LEVEL', [:tokens, :ast],
+          'Compile level') do |level|
+    options[:level] = level
+  end
+
+end.parse!
+
+parser = AlexRuby::Parse::Parser.new
+tree_visitor = AlexRuby::Compile::Visitors::TreeVisitor.new
+
+input_stream = options[:mode] == :interactive ? STDIN : open(options[:filename], 'r')
+
+parser.parse(input_stream.read)
+tree_visitor.reset
+tree_visitor.traverse_tree(parser.root)
+ast_str = tree_visitor.str
+puts ast_str
