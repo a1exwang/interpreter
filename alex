@@ -5,6 +5,7 @@ require 'stringio'
 
 require './src/parse/parser'
 require './src/compile/visitors/tree_visitor'
+require './src/vm/vm'
 
 options = {
     level: :ast
@@ -32,15 +33,23 @@ OptionParser.new do |opts|
     options[:level] = level
   end
 
+  opts.on('-v', '--vm') do
+    options[:mode] = :vm
+  end
+
 end.parse!
 
-parser = AlexRuby::Parse::Parser.new
-tree_visitor = AlexRuby::Compile::Visitors::TreeVisitor.new
+if options[:mode] == :vm
 
-input_stream = options[:mode] == :interactive ? STDIN : open(options[:filename], 'r')
+else
+  parser = AlexRuby::Parse::Parser.new
+  tree_visitor = AlexRuby::Compile::Visitors::TreeVisitor.new
 
-parser.parse(input_stream.read)
-tree_visitor.reset
-tree_visitor.traverse_tree(parser.root)
-ast_str = tree_visitor.str
-puts ast_str
+  input_stream = options[:mode] == :interactive ? STDIN : open(options[:filename], 'r')
+
+  parser.parse(input_stream.read)
+  tree_visitor.reset
+  tree_visitor.traverse_tree(parser.root)
+  ast_str = tree_visitor.str
+  puts ast_str
+end
